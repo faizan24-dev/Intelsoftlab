@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ScrapeResult, SocialPlatform } from "@/lib/types";
 import { socialCount } from "@/lib/stats";
-import BarChart from "@/components/tool/BarChart";
+import ExtractionChart from "@/components/tool/ExtractionChart";
 import {
   downloadExport,
   MetricCard,
@@ -92,7 +92,7 @@ export default function ResultView({ result }: { result: ScrapeResult }) {
         {active === "Chart" && (
           <>
             <SectionTitle>Extraction Breakdown</SectionTitle>
-            <BarChart
+            <ExtractionChart
               data={[
                 { label: "Emails", value: result.emails.length },
                 { label: "Phones", value: result.phones.length },
