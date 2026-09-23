@@ -34,7 +34,7 @@ export const tools: ToolItem[] = [
   {
     name: "Web Email Finder",
     slug: "web-email-finder",
-    href: "/tools/website-extractor",
+    href: "/tools/web-email-finder",
     description: "Instantly find the contact emails behind any domain.",
     icon: "📧",
     status: "live",
