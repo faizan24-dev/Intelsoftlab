@@ -1,5 +1,7 @@
 // Types for the Web Email Finder tool.
 
+import type { SocialPlatform } from "@/lib/types";
+
 /** What the address is for — drives the "Type" column in the results table. */
 export type EmailKind = "personal" | "role" | "generic";
 
@@ -19,11 +21,27 @@ export interface FoundEmail {
   onSiteDomain: boolean;
 }
 
+export interface SocialProfile {
+  platform: SocialPlatform;
+  url: string;
+}
+
 export interface EmailFindResult {
   /** The normalized URL that was crawled. */
   url: string;
   domain: string;
   emails: FoundEmail[];
+
+  // ── Business profile, for the results grid ────────────────────────────────
+  businessName: string;
+  phone: string;
+  /** URL of a page carrying a real contact form, or "" when none was found. */
+  contactFormUrl: string;
+  address: string;
+  social: SocialProfile[];
+  category: string;
+  technologies: string[];
+
   pagesScanned: string[];
   elapsed: number;
   status: "success" | "fail";

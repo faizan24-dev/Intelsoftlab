@@ -17,6 +17,7 @@ export default function EmailFinder() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
   const [results, setResults] = useState<EmailFindResult[] | null>(null);
+  const [execSeconds, setExecSeconds] = useState(0);
 
   const bulkList = bulkUrls
     .split(/[\n,]+/)
@@ -47,6 +48,7 @@ export default function EmailFinder() {
 
     setRunning(true);
     setResults(null);
+    const startedAt = Date.now();
     try {
       const resp = await fetch("/api/extract-emails", {
         method: "POST",
@@ -55,6 +57,7 @@ export default function EmailFinder() {
       });
       const data = (await resp.json()) as EmailFindResponse & { error?: string };
       if (!resp.ok) throw new Error(data?.error || `Request failed (${resp.status})`);
+      setExecSeconds((Date.now() - startedAt) / 1000);
       setResults(data.results ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
@@ -157,7 +160,7 @@ export default function EmailFinder() {
       )}
 
       {/* Results — EmailResults renders the per-site "nothing found" state itself */}
-      {hasResults && !running && <EmailResults results={results} />}
+      {hasResults && !running && <EmailResults results={results} execSeconds={execSeconds} />}
 
       {!hasResults && !running && !error && (
         <p className="mt-8 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 px-4 py-10 text-center text-sm text-muted">

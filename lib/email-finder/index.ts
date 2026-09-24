@@ -8,7 +8,18 @@ import { fetchPage } from "@/lib/scraper/fetch";
 import { getDomain, isSameDomain, joinUrl, normalizeUrl, stripQueryFragment } from "@/lib/scraper/url";
 import { extractPageEmails } from "@/lib/email-finder/extract";
 import { classifyEmail, scoreEmail } from "@/lib/email-finder/classify";
-import type { EmailFindResult, FoundEmail } from "@/lib/email-finder/types";
+import {
+  classifyCategory,
+  detectBusinessName,
+  hasContactForm,
+  looksLikeBusinessAddress,
+} from "@/lib/email-finder/profile";
+import { extractPhones } from "@/lib/scraper/phone";
+import { extractAddresses } from "@/lib/scraper/address";
+import { extractSocialLinks } from "@/lib/scraper/extract";
+import { detectTech } from "@/lib/scraper/tech";
+import { SOCIAL_PLATFORMS } from "@/lib/scraper/patterns";
+import type { EmailFindResult, FoundEmail, SocialProfile } from "@/lib/email-finder/types";
 
 /** Paths worth trying even when nothing links to them. */
 const SEED_PATHS = [
@@ -42,6 +53,25 @@ export interface FindEmailsOptions {
   keywords?: string[];
   /** Total pages to fetch, including the entry page. */
   maxPages?: number;
+}
+
+/**
+ * Pages that describe the *business* — as opposed to contact-ish pages like
+ * /jobs or /press, which are great for finding addresses but whose "location"
+ * belongs to a vacancy, not to the company.
+ */
+const PROFILE_HINTS = [
+  "contact", "about", "imprint", "impressum", "us", "reach", "connect",
+  "info", "legal", "privacy", "terms", "team", "who-we-are", "company",
+];
+
+function isProfilePage(url: string): boolean {
+  try {
+    const path = new URL(url).pathname.toLowerCase();
+    return PROFILE_HINTS.some((hint) => path.includes(hint));
+  } catch {
+    return false;
+  }
 }
 
 /** Does this URL look like a page that lists contact details? */
@@ -114,9 +144,17 @@ export async function findEmails(
   const pagesScanned: string[] = [];
   const visited = new Set<string>();
 
+  // Business-profile signals, accumulated across every page we read.
+  const phones: { value: string; preferred: boolean }[] = [];
+  const addresses: { value: string; preferred: boolean }[] = [];
+  const socialByPlatform = new Map<string, string>();
+  let contactFormUrl = "";
+
   const record = (pageUrl: string, html: string) => {
     pagesScanned.push(pageUrl);
-    const onContactPage = isContactish(pageUrl, keywords) || pagesScanned.length === 1;
+    const isEntry = pagesScanned.length === 1;
+    const onContactPage = isContactish(pageUrl, keywords) || isEntry;
+
     for (const { email, viaMailto } of extractPageEmails(html)) {
       const entry = hits.get(email);
       if (entry) {
@@ -126,6 +164,22 @@ export async function findEmails(
       } else {
         hits.set(email, { sources: new Set([pageUrl]), viaMailto, onContactPage });
       }
+    }
+
+    // Contact/about pages describe the business; a jobs page describes a
+    // vacancy, and its "location" is not the company address.
+    const preferred = isEntry || isProfilePage(pageUrl);
+    for (const v of extractPhones(html)) phones.push({ value: v, preferred });
+    for (const v of extractAddresses(html)) addresses.push({ value: v, preferred });
+    const social = extractSocialLinks(html);
+    for (const platform of SOCIAL_PLATFORMS) {
+      const first = social[platform][0];
+      if (first && !socialByPlatform.has(platform)) socialByPlatform.set(platform, first);
+    }
+
+    // Prefer a form on a real contact page over one in a sitewide footer.
+    if ((!contactFormUrl || (!isEntry && isProfilePage(pageUrl))) && hasContactForm(html)) {
+      contactFormUrl = pageUrl;
     }
   };
 
@@ -137,6 +191,7 @@ export async function findEmails(
       url,
       domain,
       emails: [],
+      ...emptyProfile(),
       pagesScanned: [],
       elapsed: elapsedSince(started),
       status: "fail",
@@ -148,6 +203,7 @@ export async function findEmails(
       url,
       domain,
       emails: [],
+      ...emptyProfile(),
       pagesScanned: [],
       elapsed: elapsedSince(started),
       status: "fail",
@@ -213,13 +269,67 @@ export async function findEmails(
       a.email.localeCompare(b.email),
   );
 
+  // ── Business profile ──────────────────────────────────────────────────────
+  // Name / category / tech describe the site as a whole, so they come from the
+  // entry page; contact details come from wherever they were found.
+  const social: SocialProfile[] = SOCIAL_PLATFORMS.filter((p) => socialByPlatform.has(p)).map(
+    (platform) => ({ platform, url: socialByPlatform.get(platform)! }),
+  );
+
   return {
     url,
     domain,
     emails,
+    businessName: detectBusinessName(entry.text, domain),
+    phone: pickPhone(phones),
+    contactFormUrl,
+    address: pickAddress(addresses),
+    social,
+    category: classifyCategory(entry.text),
+    technologies: detectTech(entry.text, entry.headers).map((t) => t.name),
     pagesScanned,
     elapsed: elapsedSince(started),
     status: "success",
+  };
+}
+
+interface PageValue {
+  value: string;
+  preferred: boolean;
+}
+
+/** Values from the entry/contact pages, or everything if there are none. */
+function shortlist(values: PageValue[]): string[] {
+  const preferred = values.filter((v) => v.preferred).map((v) => v.value);
+  const pool = preferred.length ? preferred : values.map((v) => v.value);
+  return [...new Set(pool)];
+}
+
+/** The fullest *business-looking* address wins. */
+function pickAddress(values: PageValue[]): string {
+  const pool = shortlist(values).filter(looksLikeBusinessAddress);
+  return pool.reduce((best, v) => (v.length > best.length ? v : best), "");
+}
+
+/** Prefer the international form; it is unambiguous for outreach. */
+function pickPhone(values: PageValue[]): string {
+  const pool = shortlist(values);
+  if (!pool.length) return "";
+  const international = pool.filter((v) => v.startsWith("+"));
+  const candidates = international.length ? international : pool;
+  return candidates.reduce((best, v) => (v.length < best.length ? v : best));
+}
+
+/** The profile fields, blank — used when a site could not be reached. */
+function emptyProfile() {
+  return {
+    businessName: "",
+    phone: "",
+    contactFormUrl: "",
+    address: "",
+    social: [] as SocialProfile[],
+    category: "—",
+    technologies: [] as string[],
   };
 }
 

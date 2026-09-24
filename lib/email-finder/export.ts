@@ -10,36 +10,47 @@ function csvCell(value: string | number | boolean): string {
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
+// One row per domain — the same shape as the results grid.
 const HEADERS = [
-  "email",
-  "type",
-  "confidence",
-  "score",
-  "same_domain",
-  "from_mailto",
-  "found_on",
-  "source_domain",
+  "domain",
+  "business_name",
+  "email_address",
+  "all_emails",
+  "phone_no",
+  "contact_form",
+  "address",
+  "social_profiles",
+  "web_category",
+  "web_technology",
+  "emails_found",
+  "pages_scanned",
+  "exec_seconds",
+  "status",
 ];
 
 export function emailsToCsv(results: EmailFindResult[]): string {
   const rows: string[] = [HEADERS.map(csvCell).join(",")];
-  for (const result of results) {
-    for (const e of result.emails) {
-      rows.push(
-        [
-          e.email,
-          e.kind,
-          e.confidence,
-          e.score,
-          e.onSiteDomain ? "yes" : "no",
-          e.viaMailto ? "yes" : "no",
-          e.sources.join(" | "),
-          result.domain,
-        ]
-          .map(csvCell)
-          .join(","),
-      );
-    }
+  for (const r of results) {
+    rows.push(
+      [
+        r.domain,
+        r.businessName,
+        r.emails[0]?.email ?? "",
+        r.emails.map((e) => e.email).join(" | "),
+        r.phone,
+        r.contactFormUrl,
+        r.address,
+        r.social.map((s) => s.url).join(" | "),
+        r.category,
+        r.technologies.join(", "),
+        r.emails.length,
+        r.pagesScanned.length,
+        r.elapsed,
+        r.status === "success" ? "SUCCESS" : "FAILED",
+      ]
+        .map(csvCell)
+        .join(","),
+    );
   }
   // BOM so Excel opens UTF-8 correctly.
   return "﻿" + rows.join("\r\n");
@@ -55,6 +66,13 @@ export function emailsToJson(results: EmailFindResult[]): string {
         domain: r.domain,
         status: r.status,
         error: r.error,
+        business_name: r.businessName,
+        phone: r.phone,
+        contact_form: r.contactFormUrl,
+        address: r.address,
+        social_profiles: r.social,
+        web_category: r.category,
+        web_technology: r.technologies,
         pages_scanned: r.pagesScanned,
         elapsed_seconds: r.elapsed,
         email_count: r.emails.length,
