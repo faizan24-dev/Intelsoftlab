@@ -43,10 +43,10 @@ export const tools: ToolItem[] = [
   {
     name: "Real Email Verifier",
     slug: "email-verifier",
-    href: "#",
+    href: "/tools/real-email-verifier",
     description: "Validate deliverability and remove bounces before you send.",
     icon: "✅",
-    status: "soon",
+    status: "live",
     group: "Email Marketing",
   },
   {
