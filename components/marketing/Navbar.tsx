@@ -52,9 +52,20 @@ export default function Navbar() {
           </NavLink>
 
           {toolGroups.map((group) => (
-            // Click to toggle, not hover: hover-open and click-toggle fight each
-            // other — the click would close a menu hover had just opened.
-            <div key={group} className="relative">
+            // Hover opens the menu. The panel is a child of this wrapper, so
+            // moving the pointer from the trigger down into it never triggers
+            // mouseleave. Focus/blur mirror it for keyboard users, and the
+            // click toggle keeps it usable on a touch screen.
+            <div
+              key={group}
+              className="relative"
+              onMouseEnter={() => setOpenGroup(group)}
+              onMouseLeave={() => setOpenGroup(null)}
+              onFocus={() => setOpenGroup(group)}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpenGroup(null);
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setOpenGroup((g) => (g === group ? null : group))}
