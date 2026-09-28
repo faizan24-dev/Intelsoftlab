@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { siteConfig, tools } from "@/lib/site";
+import { siteConfig, tools, type ToolItem } from "@/lib/site";
 
 export default function Footer() {
   const emailTools = tools.filter((t) => t.group === "Email Marketing");
@@ -27,11 +27,7 @@ export default function Footer() {
           <h4 className="text-sm font-semibold text-ink">Email Marketing</h4>
           <ul className="mt-4 space-y-2 text-sm">
             {emailTools.map((t) => (
-              <li key={t.name}>
-                <Link href={t.href} className="text-muted transition hover:text-brand-700">
-                  {t.name}
-                </Link>
-              </li>
+              <ToolLink key={t.name} tool={t} />
             ))}
           </ul>
         </div>
@@ -40,11 +36,7 @@ export default function Footer() {
           <h4 className="text-sm font-semibold text-ink">Utility Tools</h4>
           <ul className="mt-4 space-y-2 text-sm">
             {utilTools.map((t) => (
-              <li key={t.name}>
-                <Link href={t.href} className="text-muted transition hover:text-brand-700">
-                  {t.name}
-                </Link>
-              </li>
+              <ToolLink key={t.name} tool={t} />
             ))}
           </ul>
         </div>
@@ -67,5 +59,26 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+  );
+}
+
+/** A tool that is not built yet is plain text with a "Soon" tag, not a dead link. */
+function ToolLink({ tool }: { tool: ToolItem }) {
+  if (tool.status !== "live") {
+    return (
+      <li className="flex items-center gap-2 text-muted">
+        <span>{tool.name}</span>
+        <span className="rounded-full bg-slate-200/70 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-muted">
+          Soon
+        </span>
+      </li>
+    );
+  }
+  return (
+    <li>
+      <Link href={tool.href} className="text-muted transition hover:text-brand-700">
+        {tool.name}
+      </Link>
+    </li>
   );
 }

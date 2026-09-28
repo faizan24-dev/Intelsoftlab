@@ -10,6 +10,14 @@ export const siteConfig = {
   address: "Remote-first · Worldwide",
 };
 
+export type ToolGroup = "Email Marketing" | "Utility Tools";
+
+/** The two navbar dropdowns, in order. */
+export const toolGroups: ToolGroup[] = ["Email Marketing", "Utility Tools"];
+
+/** Small flag beside a tool name: a crown for flagship, a NEW pill for recent. */
+export type ToolBadge = "new" | "pro";
+
 export interface ToolItem {
   name: string;
   slug: string;
@@ -17,20 +25,15 @@ export interface ToolItem {
   description: string;
   icon: string; // emoji placeholder — swap for real icons/logo later
   status: "live" | "soon";
-  group: "Email Marketing" | "Utility Tools";
+  group: ToolGroup;
+  /** A tool that is not built yet shows "Soon" instead of its badge, so the
+   *  nav never advertises a link that goes nowhere. */
+  badge?: ToolBadge;
 }
 
+// Order here is the order the navbar dropdowns show.
 export const tools: ToolItem[] = [
-  {
-    name: "Website Extractor",
-    slug: "website-extractor",
-    href: "/tools/website-extractor",
-    description:
-      "Crawl any website and pull out emails, phone numbers, and social profiles — single URL or in bulk, exported to Excel.",
-    icon: "🕷️",
-    status: "live",
-    group: "Utility Tools",
-  },
+  // ── Email Marketing ────────────────────────────────────────────────────────
   {
     name: "Web Email Finder",
     slug: "web-email-finder",
@@ -38,6 +41,16 @@ export const tools: ToolItem[] = [
     description: "Instantly find the contact emails behind any domain.",
     icon: "📧",
     status: "live",
+    group: "Email Marketing",
+    badge: "pro",
+  },
+  {
+    name: "Text Email Finder",
+    slug: "text-email-finder",
+    href: "#",
+    description: "Pull every address out of pasted text, documents, or exports.",
+    icon: "📝",
+    status: "soon",
     group: "Email Marketing",
   },
   {
@@ -52,11 +65,30 @@ export const tools: ToolItem[] = [
   {
     name: "Bulk Mailer",
     slug: "bulk-mailer",
-    href: "#",
+    href: "/tools/bulk-mailer",
     description: "Send personalized campaigns to thousands of leads at once.",
     icon: "📨",
+    status: "live",
+    group: "Email Marketing",
+  },
+  {
+    name: "SMTP Email Server",
+    slug: "smtp-email-server",
+    href: "#",
+    description: "Managed sending infrastructure on your own domain, with DKIM and SPF.",
+    icon: "🖥️",
     status: "soon",
     group: "Email Marketing",
+  },
+  {
+    name: "Email Campaigns",
+    slug: "email-campaigns",
+    href: "#",
+    description: "Multi-step sequences with follow-ups, open tracking, and reply detection.",
+    icon: "🚀",
+    status: "soon",
+    group: "Email Marketing",
+    badge: "new",
   },
   {
     name: "Google Map Leads Finder",
@@ -66,6 +98,19 @@ export const tools: ToolItem[] = [
     icon: "📍",
     status: "soon",
     group: "Email Marketing",
+    badge: "new",
+  },
+
+  // ── Utility Tools ──────────────────────────────────────────────────────────
+  {
+    name: "Website Extractor",
+    slug: "website-extractor",
+    href: "/tools/website-extractor",
+    description:
+      "Crawl any website and pull out emails, phone numbers, and social profiles — single URL or in bulk, exported to Excel.",
+    icon: "🕷️",
+    status: "live",
+    group: "Utility Tools",
   },
   {
     name: "Merge CSV Files",
@@ -73,6 +118,42 @@ export const tools: ToolItem[] = [
     href: "#",
     description: "Combine and de-duplicate multiple lead lists in one click.",
     icon: "🗂️",
+    status: "soon",
+    group: "Utility Tools",
+  },
+  {
+    name: "Batch Image Crop",
+    slug: "batch-image-crop",
+    href: "#",
+    description: "Crop hundreds of images to the same frame in a single pass.",
+    icon: "✂️",
+    status: "soon",
+    group: "Utility Tools",
+  },
+  {
+    name: "Image Resizer & Compressor",
+    slug: "image-resizer",
+    href: "#",
+    description: "Resize and compress images in bulk without visible quality loss.",
+    icon: "🗜️",
+    status: "soon",
+    group: "Utility Tools",
+  },
+  {
+    name: "Image Extractor",
+    slug: "image-extractor",
+    href: "#",
+    description: "Download every image from a page or document at full resolution.",
+    icon: "🖼️",
+    status: "soon",
+    group: "Utility Tools",
+  },
+  {
+    name: "Scanned PDF Cleaner",
+    slug: "scanned-pdf-cleaner",
+    href: "#",
+    description: "Deskew, de-speckle, and sharpen scanned pages into clean PDFs.",
+    icon: "📑",
     status: "soon",
     group: "Utility Tools",
   },
@@ -96,9 +177,9 @@ export const tools: ToolItem[] = [
   },
 ];
 
+/** Plain links either side of the two tool dropdowns in the navbar. */
 export const mainNav = [
   { label: "Home", href: "/" },
-  { label: "Tools", href: "/tools" },
   { label: "Services", href: "/services" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
